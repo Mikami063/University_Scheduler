@@ -162,11 +162,11 @@ def main() -> None:
                     last_phrase_key = phrase_key
                 end_dt = class_end(start_dt, current_ev)
                 box = make_box([
-                    "Current class",
-                    f"Course: {current_ev.course} {current_ev.kind}",
-                    f"Room: {current_ev.room}",
-                    f"Ends at: {end_dt:%I:%M %p}",
-                    f"Time left: {fmt_delta(remaining)}",
+                    "非常現在",
+                    f"御課: {current_ev.course} {current_ev.kind}",
+                    f"御室: {current_ev.room}",
+                    f"終: {end_dt:%I:%M %p}",
+                    f"御残時: {fmt_delta(remaining)}",
                     f"狐: {last_phrase_value}",
                 ])
                 print(box)
