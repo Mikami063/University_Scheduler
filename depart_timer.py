@@ -4,6 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, time
 from zoneinfo import ZoneInfo
 import sys
+import time as time_mod
 
 TZ = ZoneInfo("America/Toronto")
 DEPARTURE_LEAD = timedelta(minutes=20)
@@ -47,24 +48,30 @@ def fmt_delta(td: timedelta) -> str:
 
 def main() -> None:
     raw = input("Enter target time (e.g. 14:30 or 2:30 PM): ")
-    now = datetime.now(TZ)
     try:
         target_time = parse_time(raw)
     except ValueError as exc:
         print(f"Invalid time: {exc}")
         sys.exit(1)
 
-    target_dt = next_datetime_for_time(now, target_time)
-    depart_dt = target_dt - DEPARTURE_LEAD
-    until_depart = depart_dt - now
+    try:
+        while True:
+            now = datetime.now(TZ)
+            target_dt = next_datetime_for_time(now, target_time)
+            depart_dt = target_dt - DEPARTURE_LEAD
+            until_depart = depart_dt - now
 
-    print(f"Now:           {now:%Y-%m-%d %I:%M:%S %p %Z}")
-    print(f"Target time:   {target_dt:%Y-%m-%d %I:%M %p}")
-    print(f"Depart time:   {depart_dt:%Y-%m-%d %I:%M %p}")
-    if until_depart.total_seconds() <= 0:
-        print("Time left:     00:00:00 (leave now)")
-    else:
-        print(f"Time left:     {fmt_delta(until_depart)} (HH:MM:SS)")
+            print(f"Now:           {now:%Y-%m-%d %I:%M:%S %p %Z}")
+            print(f"Target time:   {target_dt:%Y-%m-%d %I:%M %p}")
+            print(f"Depart time:   {depart_dt:%Y-%m-%d %I:%M %p}")
+            if until_depart.total_seconds() <= 0:
+                print("Time left:     00:00:00 (leave now)")
+            else:
+                print(f"Time left:     {fmt_delta(until_depart)} (HH:MM:SS)")
+            print("")
+            time_mod.sleep(1)
+    except KeyboardInterrupt:
+        print("\nStopped.")
 
 
 if __name__ == "__main__":
