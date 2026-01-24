@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 import time as time_mod
 import os
 import random
+import unicodedata
 
 TZ = ZoneInfo("America/Toronto")  # Ottawa
 
@@ -24,20 +25,26 @@ class ClassEvent:
     duration: timedelta
 
 SCHEDULE: list[ClassEvent] = [
-    # From your screenshot
-    ClassEvent("CEG 4166", "Lecture", "TBD", 0, time(13, 0), timedelta(minutes=80)),
-    ClassEvent("CEG 4195", "Lecture", "TBD", 0, time(14, 30), timedelta(minutes=80)),
-    ClassEvent("CEG 4166", "Tutorial", "TBD", 0, time(17, 30), timedelta(minutes=80)),
-    ClassEvent("MAT 2384", "Lecture", "TBD", 0, time(19, 0), timedelta(minutes=80)),
-    ClassEvent("MAT 2384", "Lecture", "TBD", 0, time(20, 30), timedelta(minutes=80)),
+    # Monday (0)
+    ClassEvent("CEG 4166", "Lecture",  "Learning Crossroads C442", 0, time(13, 0),  timedelta(minutes=80)),
+    ClassEvent("CEG 4195", "Lecture",  "University Centre AUD",    0, time(14, 30), timedelta(minutes=80)),
+    ClassEvent("CEG 4166", "Tutorial", "Henderson Residence 013",  0, time(17, 30), timedelta(minutes=80)),
+    ClassEvent("MAT 2384", "Lecture",  "Learning Crossroads C140", 0, time(19, 0),  timedelta(minutes=80)),
+    ClassEvent("MAT 2384", "Lecture",  "Learning Crossroads C140", 0, time(20, 30), timedelta(minutes=80)),  # screenshot shows 8:30–9:20, but keeping 80 per your rule
 
-    ClassEvent("CEG 4166", "Lab", "TBD", 1, time(11, 30), timedelta(minutes=170)),
+    # Tuesday (1)
+    ClassEvent("CEG 4166", "Laboratory", "SITE 2061",              1, time(11, 30), timedelta(minutes=170)),
+    ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",1, time(17, 30), timedelta(minutes=80)),
 
-    ClassEvent("CEG 4166", "Lecture", "TBD", 2, time(11, 30), timedelta(minutes=80)),
-    ClassEvent("CEG 4195", "Lab", "TBD", 2, time(13, 0), timedelta(minutes=170)),
-    ClassEvent("MAT 2384", "Lecture", "TBD", 2, time(16, 0), timedelta(minutes=80)),
+    # Wednesday (2)
+    ClassEvent("CEG 4166", "Lecture",    "Learning Crossroads C442",2, time(11, 30), timedelta(minutes=80)),
+    ClassEvent("CEG 4195", "Laboratory", "SITE 2060",              2, time(13, 0),  timedelta(minutes=170)),
+    ClassEvent("MAT 2384", "Lecture",    "Tabaret Hall 333",       2, time(16, 0),  timedelta(minutes=80)),
+    ClassEvent("ECO 1103", "Lecture",    "Tabaret Hall 333",       2, time(19, 0),  timedelta(minutes=170)),  # screenshot shows 7–10, but keeping 170 per your rule
 
-    ClassEvent("CEG 4195", "Lecture", "TBD", 3, time(16, 0), timedelta(minutes=80)),
+    # Thursday (3)
+    ClassEvent("CEG 4195", "Lecture",    "Henderson Residence 013", 3, time(16, 0),  timedelta(minutes=80)),
+    ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
 ]
 
 PHRASES = {
@@ -122,10 +129,23 @@ def phrase_stage(start_dt: datetime, ev: ClassEvent, now: datetime) -> str:
         return "middle"
     return "end"
 
+def display_width(text: str) -> int:
+    width = 0
+    for ch in text:
+        if unicodedata.east_asian_width(ch) in ("W", "F"):
+            width += 2
+        else:
+            width += 1
+    return width
+
+def pad_to_width(text: str, width: int) -> str:
+    pad = max(0, width - display_width(text))
+    return text + (" " * pad)
+
 def make_box(lines: list[str]) -> str:
-    width = max(len(line) for line in lines)
+    width = max(display_width(line) for line in lines)
     top = f"{GREEN}+{'-' * (width + 2)}+{RESET}"
-    body = [f"{GREEN}| {RESET}{line.ljust(width)}{GREEN} |{RESET}" for line in lines]
+    body = [f"{GREEN}| {RESET}{pad_to_width(line, width)}{GREEN} |{RESET}" for line in lines]
     bottom = f"{GREEN}+{'-' * (width + 2)}+{RESET}"
     return "\n".join([top, *body, bottom])
 
@@ -162,7 +182,7 @@ def main() -> None:
                     last_phrase_key = phrase_key
                 end_dt = class_end(start_dt, current_ev)
                 box = make_box([
-                    "非常現在",
+                    "Current Class",
                     f"御課: {current_ev.course} {current_ev.kind}",
                     f"御室: {current_ev.room}",
                     f"終: {end_dt:%I:%M %p}",
