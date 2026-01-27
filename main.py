@@ -160,13 +160,7 @@ def floor_to_step(value: int, step: int) -> int:
 def build_weekly_view() -> str:
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     slot_minutes = 30
-    if SCHEDULE:
-        starts = [ev.start.hour * 60 + ev.start.minute for ev in SCHEDULE]
-        ends = [ev.start.hour * 60 + ev.start.minute + int(ev.duration.total_seconds() // 60) for ev in SCHEDULE]
-        start_min = floor_to_step(min(starts), slot_minutes)
-        end_min = ceil_to_step(max(ends), slot_minutes)
-    else:
-        start_min, end_min = 8 * 60, 18 * 60
+    start_min, end_min = 0, 24 * 60
 
     labels = [f"{ev.course} {ev.kind}" for ev in SCHEDULE]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
