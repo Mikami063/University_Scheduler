@@ -149,6 +149,57 @@ def make_box(lines: list[str]) -> str:
     bottom = f"{GREEN}+{'-' * (width + 2)}+{RESET}"
     return "\n".join([top, *body, bottom])
 
+def ceil_to_step(value: int, step: int) -> int:
+    if value % step == 0:
+        return value
+    return value + (step - (value % step))
+
+def floor_to_step(value: int, step: int) -> int:
+    return value - (value % step)
+
+def build_weekly_view() -> str:
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    slot_minutes = 30
+    if SCHEDULE:
+        starts = [ev.start.hour * 60 + ev.start.minute for ev in SCHEDULE]
+        ends = [ev.start.hour * 60 + ev.start.minute + int(ev.duration.total_seconds() // 60) for ev in SCHEDULE]
+        start_min = floor_to_step(min(starts), slot_minutes)
+        end_min = ceil_to_step(max(ends), slot_minutes)
+    else:
+        start_min, end_min = 8 * 60, 18 * 60
+
+    labels = [f"{ev.course} {ev.kind}" for ev in SCHEDULE]
+    col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
+    time_width = 5  # HH:MM
+
+    def cell(text: str, width: int) -> str:
+        return pad_to_width(text[:width], width)
+
+    header = ["Time"] + days
+    line = "+" + "+".join(["-" * time_width] + ["-" * col_width] * len(days)) + "+"
+    out: list[str] = [line]
+    out.append("|" + "|".join([cell(h, time_width)] + [cell(h, col_width) for h in days]) + "|")
+    out.append(line)
+
+    for t in range(start_min, end_min, slot_minutes):
+        hh = t // 60
+        mm = t % 60
+        row = [f"{hh:02d}:{mm:02d}"]
+        for day_idx in range(7):
+            label = ""
+            for ev in SCHEDULE:
+                if ev.weekday != day_idx:
+                    continue
+                ev_start = ev.start.hour * 60 + ev.start.minute
+                ev_end = ev_start + int(ev.duration.total_seconds() // 60)
+                if ev_start <= t < ev_end:
+                    label = f"{ev.course} {ev.kind}"
+                    break
+            row.append(label)
+        out.append("|" + "|".join([cell(row[0], time_width)] + [cell(text, col_width) for text in row[1:]]) + "|")
+    out.append(line)
+    return "\n".join(out)
+
 def compute_departure_time(delta: timedelta) -> timedelta:
     # Assuming you want to leave 20 minutes before class starts
     return delta - timedelta(minutes=20)
@@ -192,6 +243,9 @@ def main() -> None:
                 print(box)
             else:
                 print("No class in session.")
+            print("")
+            print("Weekly Schedule")
+            print(build_weekly_view())
             time_mod.sleep(1)
     except KeyboardInterrupt:
         print("\nStopped.")
