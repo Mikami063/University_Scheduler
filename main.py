@@ -192,8 +192,11 @@ def build_weekly_view() -> str:
                     continue
                 ev_start = ev.start.hour * 60 + ev.start.minute
                 ev_end = ev_start + int(ev.duration.total_seconds() // 60)
-                if ev_start <= t < ev_end:
+                if t == ev_start:
                     label = f"{ev.course} {ev.kind}"
+                    break
+                if ev_start < t < ev_end:
+                    label = "|"
                     break
             row.append(label)
         out.append("|" + "|".join([cell(row[0], time_width)] + [cell(text, col_width) for text in row[1:]]) + "|")
