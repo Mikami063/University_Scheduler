@@ -178,7 +178,7 @@ def build_weekly_view() -> str:
     header = ["Time"] + days
     line = "+" + "+".join(["-" * time_width] + ["-" * col_width] * len(days)) + "+"
     out: list[str] = [line]
-    out.append("|" + "|".join([cell(h, time_width)] + [cell(h, col_width) for h in days]) + "|")
+    out.append("|" + "|".join([cell("Time", time_width)] + [cell(day, col_width) for day in days]) + "|")
     out.append(line)
 
     for t in range(start_min, end_min, slot_minutes):
