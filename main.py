@@ -157,19 +157,20 @@ def ceil_to_step(value: int, step: int) -> int:
 def floor_to_step(value: int, step: int) -> int:
     return value - (value % step)
 
-def build_weekly_view() -> str:
+def build_weekly_view(now: datetime) -> str:
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     slot_minutes = 30
     start_min, end_min = 0, 24 * 60
+    now_minutes = now.hour * 60 + now.minute
+    now_slot = floor_to_step(now_minutes, slot_minutes)
 
     labels = [f"{ev.course} {ev.kind}" for ev in SCHEDULE]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
-    time_width = 5  # HH:MM
+    time_width = 6  # marker + HH:MM
 
     def cell(text: str, width: int) -> str:
         return pad_to_width(text[:width], width)
 
-    header = ["Time"] + days
     line = "+" + "+".join(["-" * time_width] + ["-" * col_width] * len(days)) + "+"
     out: list[str] = [line]
     out.append("|" + "|".join([cell("Time", time_width)] + [cell(day, col_width) for day in days]) + "|")
@@ -178,7 +179,8 @@ def build_weekly_view() -> str:
     for t in range(start_min, end_min, slot_minutes):
         hh = t // 60
         mm = t % 60
-        row = [f"{hh:02d}:{mm:02d}"]
+        marker = "." if t == now_slot else " "
+        row = [f"{marker}{hh:02d}:{mm:02d}"]
         for day_idx in range(7):
             label = ""
             for ev in SCHEDULE:
@@ -192,6 +194,8 @@ def build_weekly_view() -> str:
                 if ev_start < t < ev_end:
                     label = "|"
                     break
+            if day_idx == now.weekday() and t == now_slot and not label:
+                label = "."
             row.append(label)
         out.append("|" + "|".join([cell(row[0], time_width)] + [cell(text, col_width) for text in row[1:]]) + "|")
     out.append(line)
@@ -242,7 +246,7 @@ def main() -> None:
                 print("No class in session.")
             print("")
             print("Weekly Schedule")
-            print(build_weekly_view())
+            print(build_weekly_view(now))
             time_mod.sleep(1)
     except KeyboardInterrupt:
         print("\nStopped.")
