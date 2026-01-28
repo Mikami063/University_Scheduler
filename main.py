@@ -15,11 +15,16 @@ GREEN = "\033[32m"
 RESET = "\033[0m"
 HILITE = "\033[97;40m"
 HILITE_RESET = "\033[0m"
+FG_WHITE = "\033[97m"
+BG_BLUE = "\033[44m"
+BG_MAGENTA = "\033[45m"
+BG_CYAN = "\033[46m"
 
 # Sleep feature flag and config
-SLEEP_ENABLED = False
+SLEEP_ENABLED = True
 SLEEP_START = time(22, 0)  # 10:00 PM
 SLEEP_DURATION = timedelta(hours=10)
+SLEEP_EVENT_COLOR = BG_CYAN
 
 # Monday=0 ... Sunday=6
 @dataclass(frozen=True)
@@ -30,6 +35,7 @@ class ClassEvent:
     weekday: int
     start: time
     duration: timedelta
+    color: str = ""
 
 SCHEDULE: list[ClassEvent] = [
     # Monday (0)
@@ -54,6 +60,14 @@ SCHEDULE: list[ClassEvent] = [
     ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
 ]
 
+PERSONAL_SCHEDULE: list[ClassEvent] = [
+    # Example:
+    ClassEvent("MAT 2384", "Study", "N/A", 2, time(19, 0), timedelta(minutes=90)),
+]
+
+CLASS_EVENT_COLOR = BG_BLUE
+PERSONAL_EVENT_COLOR = BG_MAGENTA
+
 def build_sleep_events() -> list[ClassEvent]:
     if not SLEEP_ENABLED:
         return []
@@ -63,13 +77,13 @@ def build_sleep_events() -> list[ClassEvent]:
     for day in range(7):
         end_min = start_min + duration_min
         if end_min <= 24 * 60:
-            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, SLEEP_DURATION))
+            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, SLEEP_DURATION, SLEEP_EVENT_COLOR))
         else:
             first_duration = timedelta(minutes=(24 * 60 - start_min))
             second_duration = timedelta(minutes=(end_min - 24 * 60))
-            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, first_duration))
+            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, first_duration, SLEEP_EVENT_COLOR))
             next_day = (day + 1) % 7
-            events.append(ClassEvent("Sleep", "Rest", "Home", next_day, time(0, 0), second_duration))
+            events.append(ClassEvent("Sleep", "Rest", "Home", next_day, time(0, 0), second_duration, SLEEP_EVENT_COLOR))
     return events
 
 PHRASES = {
@@ -189,8 +203,13 @@ def build_weekly_view(now: datetime) -> str:
     now_minutes = now.hour * 60 + now.minute
     now_slot = floor_to_step(now_minutes, slot_minutes)
 
-    all_events = SCHEDULE + build_sleep_events()
-    labels = [f"{ev.course} {ev.kind}" for ev in all_events]
+    sleep_events = build_sleep_events()
+    event_sources = (
+        [(ev, ev.color or CLASS_EVENT_COLOR) for ev in SCHEDULE]
+        + [(ev, ev.color or PERSONAL_EVENT_COLOR) for ev in PERSONAL_SCHEDULE]
+        + [(ev, ev.color) for ev in sleep_events]
+    )
+    labels = [f"{ev.course} {ev.kind}" for ev, _ in event_sources]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
     time_width = 6  # marker + HH:MM
 
@@ -203,6 +222,12 @@ def build_weekly_view(now: datetime) -> str:
             return content
         return f"{HILITE}{content}{HILITE_RESET}"
 
+    def cell_color(text: str, width: int, color: str) -> str:
+        content = cell(text, width)
+        if not color:
+            return content
+        return f"{FG_WHITE}{color}{content}{RESET}"
+
     line = "+" + "+".join(["-" * time_width] + ["-" * col_width] * len(days)) + "+"
     out: list[str] = [line]
     out.append("|" + "|".join([cell("Time", time_width)] + [cell(day, col_width) for day in days]) + "|")
@@ -213,22 +238,27 @@ def build_weekly_view(now: datetime) -> str:
         mm = t % 60
         marker = "." if t == now_slot else " "
         row = [f"{marker}{hh:02d}:{mm:02d}"]
+        row_colors: list[str] = []
         for day_idx in range(7):
             label = ""
-            for ev in all_events:
+            color = ""
+            for ev, default_color in event_sources:
                 if ev.weekday != day_idx:
                     continue
                 ev_start = ev.start.hour * 60 + ev.start.minute
                 ev_end = ev_start + int(ev.duration.total_seconds() // 60)
                 if t == ev_start:
                     label = f"{ev.course} {ev.kind}"
+                    color = default_color
                     break
                 if ev_start < t < ev_end:
                     label = "|"
+                    color = default_color
                     break
             if day_idx == now.weekday() and t == now_slot and not label:
                 label = "."
             row.append(label)
+            row_colors.append(color)
         row_hl = t == now_slot
         out.append(
             "|"
@@ -236,7 +266,9 @@ def build_weekly_view(now: datetime) -> str:
                 [cell_hl(row[0], time_width, row_hl)]
                 + [
                     cell_hl(text, col_width, row_hl and day_idx == now.weekday())
-                    for day_idx, text in enumerate(row[1:])
+                    if row_hl and day_idx == now.weekday()
+                    else (cell_color(text, col_width, color) if text else cell(text, col_width))
+                    for day_idx, (text, color) in enumerate(zip(row[1:], row_colors))
                 ]
             )
             + "|"
