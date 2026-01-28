@@ -295,7 +295,7 @@ def build_weekly_view(now: datetime) -> str:
             sleep_marker_day = mid_dt.weekday()
             mid_minutes = mid_dt.hour * 60 + mid_dt.minute
             sleep_marker_slot = floor_to_step(mid_minutes, slot_minutes)
-            sleep_marker_label = f"T-{fmt_delta_hm(sleep_end - now)}"
+            sleep_marker_label = f"|Wake in: {fmt_delta(sleep_end - now)}"
 
     sleep_events = build_sleep_events()
     morning_events = build_morning_events()
