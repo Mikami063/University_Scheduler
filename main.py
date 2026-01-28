@@ -22,7 +22,7 @@ BG_CYAN = "\033[46m"
 
 # Sleep feature flag and config
 SLEEP_ENABLED = True
-SLEEP_START = time(22, 0)  # 10:00 PM
+SLEEP_START = time(23, 0)  # 10:00 PM
 SLEEP_DURATION = timedelta(hours=10)
 SLEEP_EVENT_COLOR = BG_CYAN
 
@@ -47,7 +47,7 @@ SCHEDULE: list[ClassEvent] = [
 
     # Tuesday (1)
     ClassEvent("CEG 4166", "Laboratory", "SITE 2061",              1, time(11, 30), timedelta(minutes=170)),
-    ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",1, time(17, 30), timedelta(minutes=80)),
+    #ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",1, time(17, 30), timedelta(minutes=80)),
 
     # Wednesday (2)
     ClassEvent("CEG 4166", "Lecture",    "Learning Crossroads C442",2, time(11, 30), timedelta(minutes=80)),
@@ -57,12 +57,17 @@ SCHEDULE: list[ClassEvent] = [
 
     # Thursday (3)
     ClassEvent("CEG 4195", "Lecture",    "Henderson Residence 013", 3, time(16, 0),  timedelta(minutes=80)),
-    ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
+    #ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
 ]
 
 PERSONAL_SCHEDULE: list[ClassEvent] = [
     # Example:
-    ClassEvent("MAT 2384", "Study", "N/A", 2, time(19, 0), timedelta(minutes=90)),
+    ClassEvent("MAT 2384", "Study", "N/A", 1, time(19, 0), timedelta(minutes=90)),
+
+    ClassEvent("Ski Course", "Sport", "Mont Cascade", 3, time(17, 30), timedelta(minutes=260)),
+
+    ClassEvent("MAT 2384", "Study", "N/A", 4, time(10, 30), timedelta(minutes=90)),
+    ClassEvent("Church Night", "Social", "CCCO", 4, time(18, 00), timedelta(minutes=170)),
 ]
 
 CLASS_EVENT_COLOR = BG_BLUE
