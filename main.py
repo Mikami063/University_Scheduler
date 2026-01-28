@@ -96,7 +96,28 @@ FOOD_SCHEDULE: list[ClassEvent] = [
 
 DUE_ITEMS: list[DueItem] = [
     # Example:
-    # DueItem("CEG 4166 HW3", "Homework", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
+     #CEG 4166
+     DueItem("CEG 4166", "Lab1", datetime(2026, 1, 31, 23, 59, tzinfo=TZ)),
+
+     #CEG 4195 complete
+     DueItem("CEG 4195", "Ass3", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass4", datetime(2026, 2, 9, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass5", datetime(2026, 2, 23, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass6", datetime(2026, 3, 2, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass7", datetime(2026, 3, 9, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass8", datetime(2026, 3, 16, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass9", datetime(2026, 3, 23, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Ass10", datetime(2026, 3, 30, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Lab1", datetime(2026, 2, 23, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Lab2", datetime(2026, 4, 9, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Project", datetime(2026, 3, 30, 23, 59, tzinfo=TZ)),
+
+     #MAT 2384 complete
+     DueItem("MAT 2384", "Midterm1", datetime(2026, 2, 11, 23, 59, tzinfo=TZ)),
+     DueItem("MAT 2384", "Midterm2", datetime(2026, 3, 18, 23, 59, tzinfo=TZ)),
+
+     #ECO 1103
+     DueItem("ECO 1103", "Ass1", datetime(2026, 2, 18, 23, 59, tzinfo=TZ)),
 ]
 
 def build_sleep_events() -> list[ClassEvent]:
