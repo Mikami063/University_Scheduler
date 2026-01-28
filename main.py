@@ -463,6 +463,16 @@ def build_due_view(now: datetime) -> str:
         out.append(line)
     return "\n".join(out)
 
+def build_due_list(now: datetime) -> str:
+    if not DUE_ITEMS:
+        return "No due items."
+    items = sorted(DUE_ITEMS, key=lambda i: i.due_date)
+    lines = ["All Tasks (days until due)"]
+    for item in items:
+        days_left = (item.due_date.date() - now.date()).days
+        lines.append(f"{item.title} | {item.kind} | {days_left:+d}d | {item.due_date:%Y-%m-%d %I:%M %p}")
+    return "\n".join(lines)
+
 def compute_departure_time(delta: timedelta) -> timedelta:
     # Assuming you want to leave 20 minutes before class starts
     return delta - timedelta(minutes=20)
@@ -531,6 +541,8 @@ def main() -> None:
             print(build_weekly_view(now))
             print("")
             print(build_due_view(now))
+            print("")
+            print(build_due_list(now))
             time_mod.sleep(1)
     except KeyboardInterrupt:
         print("\nStopped.")
