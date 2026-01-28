@@ -13,6 +13,8 @@ TZ = ZoneInfo("America/Toronto")  # Ottawa
 
 GREEN = "\033[32m"
 RESET = "\033[0m"
+HILITE = "\033[97;40m"
+HILITE_RESET = "\033[0m"
 
 # Monday=0 ... Sunday=6
 @dataclass(frozen=True)
@@ -171,6 +173,12 @@ def build_weekly_view(now: datetime) -> str:
     def cell(text: str, width: int) -> str:
         return pad_to_width(text[:width], width)
 
+    def cell_hl(text: str, width: int, highlight: bool) -> str:
+        content = cell(text, width)
+        if not highlight:
+            return content
+        return f"{HILITE}{content}{HILITE_RESET}"
+
     line = "+" + "+".join(["-" * time_width] + ["-" * col_width] * len(days)) + "+"
     out: list[str] = [line]
     out.append("|" + "|".join([cell("Time", time_width)] + [cell(day, col_width) for day in days]) + "|")
@@ -197,7 +205,18 @@ def build_weekly_view(now: datetime) -> str:
             if day_idx == now.weekday() and t == now_slot and not label:
                 label = "."
             row.append(label)
-        out.append("|" + "|".join([cell(row[0], time_width)] + [cell(text, col_width) for text in row[1:]]) + "|")
+        row_hl = t == now_slot
+        out.append(
+            "|"
+            + "|".join(
+                [cell_hl(row[0], time_width, row_hl)]
+                + [
+                    cell_hl(text, col_width, row_hl and day_idx == now.weekday())
+                    for day_idx, text in enumerate(row[1:])
+                ]
+            )
+            + "|"
+        )
     out.append(line)
     return "\n".join(out)
 
