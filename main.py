@@ -204,12 +204,13 @@ def build_weekly_view(now: datetime) -> str:
     now_slot = floor_to_step(now_minutes, slot_minutes)
 
     sleep_events = build_sleep_events()
+    # Higher priority renders on top when events overlap.
     event_sources = (
-        [(ev, ev.color or CLASS_EVENT_COLOR) for ev in SCHEDULE]
-        + [(ev, ev.color or PERSONAL_EVENT_COLOR) for ev in PERSONAL_SCHEDULE]
-        + [(ev, ev.color) for ev in sleep_events]
+        [(ev, ev.color or PERSONAL_EVENT_COLOR, 2) for ev in PERSONAL_SCHEDULE]
+        + [(ev, ev.color or CLASS_EVENT_COLOR, 1) for ev in SCHEDULE]
+        + [(ev, ev.color, 0) for ev in sleep_events]
     )
-    labels = [f"{ev.course} {ev.kind}" for ev, _ in event_sources]
+    labels = [f"{ev.course} {ev.kind}" for ev, _, _ in event_sources]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
     time_width = 6  # marker + HH:MM
 
@@ -242,19 +243,21 @@ def build_weekly_view(now: datetime) -> str:
         for day_idx in range(7):
             label = ""
             color = ""
-            for ev, default_color in event_sources:
+            matches: list[tuple[int, str, str, bool]] = []
+            for ev, default_color, priority in event_sources:
                 if ev.weekday != day_idx:
                     continue
                 ev_start = ev.start.hour * 60 + ev.start.minute
                 ev_end = ev_start + int(ev.duration.total_seconds() // 60)
                 if t == ev_start:
-                    label = f"{ev.course} {ev.kind}"
-                    color = default_color
-                    break
+                    matches.append((priority, f"{ev.course} {ev.kind}", default_color, True))
                 if ev_start < t < ev_end:
-                    label = "|"
-                    color = default_color
-                    break
+                    matches.append((priority, "|", default_color, False))
+            if matches:
+                # Pick highest-priority event; mark overlaps.
+                priority, label, color, is_start = max(matches, key=lambda x: x[0])
+                if len(matches) > 1:
+                    label = (label + " +") if is_start else "|+"
             if day_idx == now.weekday() and t == now_slot and not label:
                 label = "."
             row.append(label)
