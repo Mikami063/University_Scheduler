@@ -19,12 +19,17 @@ FG_WHITE = "\033[97m"
 BG_BLUE = "\033[44m"
 BG_MAGENTA = "\033[45m"
 BG_CYAN = "\033[46m"
+BG_YELLOW = "\033[43m"
+BG_GREEN = "\033[42m"
 
 # Sleep feature flag and config
 SLEEP_ENABLED = True
 SLEEP_START = time(23, 0)  # 10:00 PM
 SLEEP_DURATION = timedelta(hours=10)
 SLEEP_EVENT_COLOR = BG_CYAN
+MORNING_ENABLED = True
+MORNING_DURATION = timedelta(minutes=60)
+MORNING_EVENT_COLOR = BG_YELLOW
 
 # Monday=0 ... Sunday=6
 @dataclass(frozen=True)
@@ -72,6 +77,12 @@ PERSONAL_SCHEDULE: list[ClassEvent] = [
 
 CLASS_EVENT_COLOR = BG_BLUE
 PERSONAL_EVENT_COLOR = BG_MAGENTA
+FOOD_EVENT_COLOR = BG_GREEN
+
+FOOD_SCHEDULE: list[ClassEvent] = [
+    # Example:
+    # ClassEvent("Dinner", "Food", "Home", 0, time(18, 0), timedelta(minutes=60)),
+]
 
 def build_sleep_events() -> list[ClassEvent]:
     if not SLEEP_ENABLED:
@@ -89,6 +100,60 @@ def build_sleep_events() -> list[ClassEvent]:
             events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, first_duration, SLEEP_EVENT_COLOR))
             next_day = (day + 1) % 7
             events.append(ClassEvent("Sleep", "Rest", "Home", next_day, time(0, 0), second_duration, SLEEP_EVENT_COLOR))
+    return events
+
+def build_morning_events() -> list[ClassEvent]:
+    if not (SLEEP_ENABLED and MORNING_ENABLED):
+        return []
+    events: list[ClassEvent] = []
+    start_min = SLEEP_START.hour * 60 + SLEEP_START.minute
+    sleep_min = int(SLEEP_DURATION.total_seconds() // 60)
+    routine_min = int(MORNING_DURATION.total_seconds() // 60)
+    for day in range(7):
+        sleep_end_min = start_min + sleep_min
+        end_day = day
+        if sleep_end_min >= 24 * 60:
+            sleep_end_min -= 24 * 60
+            end_day = (day + 1) % 7
+        routine_end_min = sleep_end_min + routine_min
+        if routine_end_min <= 24 * 60:
+            events.append(
+                ClassEvent(
+                    "Morning",
+                    "Routine",
+                    "Home",
+                    end_day,
+                    time(sleep_end_min // 60, sleep_end_min % 60),
+                    timedelta(minutes=routine_min),
+                    MORNING_EVENT_COLOR,
+                )
+            )
+        else:
+            first_duration = timedelta(minutes=(24 * 60 - sleep_end_min))
+            second_duration = timedelta(minutes=(routine_end_min - 24 * 60))
+            events.append(
+                ClassEvent(
+                    "Morning",
+                    "Routine",
+                    "Home",
+                    end_day,
+                    time(sleep_end_min // 60, sleep_end_min % 60),
+                    first_duration,
+                    MORNING_EVENT_COLOR,
+                )
+            )
+            next_day = (end_day + 1) % 7
+            events.append(
+                ClassEvent(
+                    "Morning",
+                    "Routine",
+                    "Home",
+                    next_day,
+                    time(0, 0),
+                    second_duration,
+                    MORNING_EVENT_COLOR,
+                )
+            )
     return events
 
 PHRASES = {
@@ -209,11 +274,14 @@ def build_weekly_view(now: datetime) -> str:
     now_slot = floor_to_step(now_minutes, slot_minutes)
 
     sleep_events = build_sleep_events()
+    morning_events = build_morning_events()
     # Higher priority renders on top when events overlap.
     event_sources = (
-        [(ev, ev.color or PERSONAL_EVENT_COLOR, 2) for ev in PERSONAL_SCHEDULE]
+        [(ev, ev.color or PERSONAL_EVENT_COLOR, 3) for ev in PERSONAL_SCHEDULE]
+        + [(ev, ev.color or FOOD_EVENT_COLOR, 2) for ev in FOOD_SCHEDULE]
         + [(ev, ev.color or CLASS_EVENT_COLOR, 1) for ev in SCHEDULE]
         + [(ev, ev.color, 0) for ev in sleep_events]
+        + [(ev, ev.color, 0) for ev in morning_events]
     )
     labels = [f"{ev.course} {ev.kind}" for ev, _, _ in event_sources]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
