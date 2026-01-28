@@ -42,6 +42,12 @@ class ClassEvent:
     duration: timedelta
     color: str = ""
 
+@dataclass(frozen=True)
+class DueItem:
+    title: str
+    kind: str
+    due_date: datetime
+
 SCHEDULE: list[ClassEvent] = [
     # Monday (0)
     ClassEvent("CEG 4166", "Lecture",  "Learning Crossroads C442", 0, time(13, 0),  timedelta(minutes=80)),
@@ -86,6 +92,11 @@ FOOD_SCHEDULE: list[ClassEvent] = [
      ClassEvent("Dinner", "Home Made[2]", "N/A", 1, time(17, 0), timedelta(minutes=110)),
      ClassEvent("Lunch", "Prepared Food", "Home", 2, time(10, 0), timedelta(minutes=60)),
      ClassEvent("Dinner", "Eat out", "N/A", 2, time(17, 30), timedelta(minutes=60)),
+]
+
+DUE_ITEMS: list[DueItem] = [
+    # Example:
+    # DueItem("CEG 4166 HW3", "Homework", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
 ]
 
 def build_sleep_events() -> list[ClassEvent]:
@@ -396,6 +407,41 @@ def build_weekly_view(now: datetime) -> str:
     out.append(line)
     return "\n".join(out)
 
+def build_due_view(now: datetime) -> str:
+    week_start = now.date() - timedelta(days=now.weekday())
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weeks = [week_start, week_start + timedelta(days=7)]
+
+    def day_label(d) -> str:
+        return f"{d:%m/%d}"
+
+    due_map: dict[datetime.date, list[str]] = {}
+    for item in DUE_ITEMS:
+        d = item.due_date.date()
+        if week_start <= d <= (week_start + timedelta(days=13)):
+            due_map.setdefault(d, []).append(f"{item.title} ({item.kind})")
+
+    col_width = 18
+    line = "+" + "+".join(["-" * col_width] * 7) + "+"
+    out: list[str] = []
+    for w, start in enumerate(weeks):
+        out.append("Due This Week" if w == 0 else "Due Next Week")
+        out.append(line)
+        out.append("|" + "|".join([pad_to_width(days[i], col_width) for i in range(7)]) + "|")
+        out.append("|" + "|".join([pad_to_width(day_label(start + timedelta(days=i)), col_width) for i in range(7)]) + "|")
+        out.append(line)
+        max_rows = 3
+        for r in range(max_rows):
+            row_cells = []
+            for i in range(7):
+                d = start + timedelta(days=i)
+                items = due_map.get(d, [])
+                text = items[r] if r < len(items) else ""
+                row_cells.append(pad_to_width(text[:col_width], col_width))
+            out.append("|" + "|".join(row_cells) + "|")
+        out.append(line)
+    return "\n".join(out)
+
 def compute_departure_time(delta: timedelta) -> timedelta:
     # Assuming you want to leave 20 minutes before class starts
     return delta - timedelta(minutes=20)
@@ -462,6 +508,8 @@ def main() -> None:
             print("")
             print("Weekly Schedule")
             print(build_weekly_view(now))
+            print("")
+            print(build_due_view(now))
             time_mod.sleep(1)
     except KeyboardInterrupt:
         print("\nStopped.")
