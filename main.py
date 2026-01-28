@@ -202,6 +202,14 @@ def fmt_delta(td: timedelta) -> str:
     s = total % 60
     return f"{h:02d}:{m:02d}:{s:02d}"
 
+def fmt_delta_hm(td: timedelta) -> str:
+    total = int(td.total_seconds())
+    if total < 0:
+        total = 0
+    h = total // 3600
+    m = (total % 3600) // 60
+    return f"{h:02d}:{m:02d}"
+
 def clear_screen() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
@@ -276,6 +284,18 @@ def build_weekly_view(now: datetime) -> str:
     start_min, end_min = 0, 24 * 60
     now_minutes = now.hour * 60 + now.minute
     now_slot = floor_to_step(now_minutes, slot_minutes)
+    sleep_window = current_sleep_window(now)
+    sleep_marker_day: int | None = None
+    sleep_marker_slot: int | None = None
+    sleep_marker_label = ""
+    if sleep_window:
+        _, sleep_end = sleep_window
+        if sleep_end > now:
+            mid_dt = now + (sleep_end - now) / 2
+            sleep_marker_day = mid_dt.weekday()
+            mid_minutes = mid_dt.hour * 60 + mid_dt.minute
+            sleep_marker_slot = floor_to_step(mid_minutes, slot_minutes)
+            sleep_marker_label = f"T-{fmt_delta_hm(sleep_end - now)}"
 
     sleep_events = build_sleep_events()
     morning_events = build_morning_events()
@@ -320,21 +340,41 @@ def build_weekly_view(now: datetime) -> str:
         for day_idx in range(7):
             label = ""
             color = ""
-            matches: list[tuple[int, str, str, bool]] = []
+            matches: list[tuple[int, str, str, bool, ClassEvent]] = []
             for ev, default_color, priority in event_sources:
                 if ev.weekday != day_idx:
                     continue
                 ev_start = ev.start.hour * 60 + ev.start.minute
                 ev_end = ev_start + int(ev.duration.total_seconds() // 60)
-                if t == ev_start:
-                    matches.append((priority, f"{ev.course} {ev.kind}", default_color, True))
-                if ev_start < t < ev_end:
-                    matches.append((priority, "|", default_color, False))
+                if ev.course == "Sleep" and ev.kind == "Rest":
+                    start_slot = floor_to_step(ev_start, slot_minutes)
+                    end_slot = ceil_to_step(ev_end, slot_minutes)
+                    last_slot = max(start_slot, end_slot - slot_minutes)
+                    if t == start_slot:
+                        matches.append((priority, "Sleep", default_color, True, ev))
+                    elif t == last_slot:
+                        matches.append((priority, "E", default_color, False, ev))
+                    elif start_slot < t < end_slot:
+                        matches.append((priority, "|", default_color, False, ev))
+                else:
+                    if t == ev_start:
+                        matches.append((priority, f"{ev.course} {ev.kind}", default_color, True, ev))
+                    if ev_start < t < ev_end:
+                        matches.append((priority, "|", default_color, False, ev))
             if matches:
                 # Pick highest-priority event; mark overlaps.
-                priority, label, color, is_start = max(matches, key=lambda x: x[0])
+                priority, label, color, is_start, _ = max(matches, key=lambda x: x[0])
                 if len(matches) > 1:
                     label = (label + " +") if is_start else "|+"
+            if (
+                sleep_marker_day is not None
+                and sleep_marker_slot is not None
+                and day_idx == sleep_marker_day
+                and t == sleep_marker_slot
+                and (not label or (label in ("Sleep", "|", "E") and color == SLEEP_EVENT_COLOR))
+            ):
+                label = sleep_marker_label
+                color = SLEEP_EVENT_COLOR
             if day_idx == now.weekday() and t == now_slot and not label:
                 label = "."
             row.append(label)
@@ -363,6 +403,18 @@ def compute_departure_time(delta: timedelta) -> timedelta:
 def compute_lunch_time(delta: timedelta) -> timedelta:
     return delta - timedelta(minutes=45)
 
+def current_sleep_window(now: datetime) -> tuple[datetime, datetime] | None:
+    if not SLEEP_ENABLED:
+        return None
+    today_start = datetime.combine(now.date(), SLEEP_START, tzinfo=TZ)
+    start_dt = today_start
+    if now < today_start:
+        start_dt = today_start - timedelta(days=1)
+    end_dt = start_dt + SLEEP_DURATION
+    if not (start_dt <= now <= end_dt):
+        return None
+    return start_dt, end_dt
+
 def main() -> None:
     try:
         last_phrase_key: tuple[str, str] | None = None
@@ -378,6 +430,14 @@ def main() -> None:
             print(f"Time left:  {fmt_delta(delta)} (HH:MM:SS)")
             print(f"Departure:  {fmt_delta(compute_departure_time(delta))} (HH:MM:SS)")
             print(f"Departure with Lunch: {fmt_delta(compute_lunch_time(compute_departure_time(delta)))} (HH:MM:SS)")
+            if SLEEP_ENABLED:
+                sleep_window = current_sleep_window(now)
+                if sleep_window:
+                    sleep_start, sleep_end = sleep_window
+                    print(f"Sleep ends at: {sleep_end:%a %I:%M %p}")
+                    print(f"Sleep ends in: {fmt_delta(sleep_end - now)} (HH:MM:SS)")
+                else:
+                    print("Not sleeping right now.")
             print("")
 
             if current:
