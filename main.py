@@ -81,7 +81,11 @@ FOOD_EVENT_COLOR = BG_GREEN
 
 FOOD_SCHEDULE: list[ClassEvent] = [
     # Example:
-    # ClassEvent("Dinner", "Food", "Home", 0, time(18, 0), timedelta(minutes=60)),
+     ClassEvent("Dinner", "Eat out", "N/A", 0, time(16, 0), timedelta(minutes=60)),
+     ClassEvent("Lunch", "Prepared Food", "Home", 1, time(10, 0), timedelta(minutes=60)),
+     ClassEvent("Dinner", "Home Made[2]", "N/A", 1, time(17, 0), timedelta(minutes=110)),
+     ClassEvent("Lunch", "Prepared Food", "Home", 2, time(10, 0), timedelta(minutes=60)),
+     ClassEvent("Dinner", "Eat out", "N/A", 2, time(17, 30), timedelta(minutes=60)),
 ]
 
 def build_sleep_events() -> list[ClassEvent]:
