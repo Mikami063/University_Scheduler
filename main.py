@@ -16,6 +16,11 @@ RESET = "\033[0m"
 HILITE = "\033[97;40m"
 HILITE_RESET = "\033[0m"
 
+# Sleep feature flag and config
+SLEEP_ENABLED = False
+SLEEP_START = time(22, 0)  # 10:00 PM
+SLEEP_DURATION = timedelta(hours=10)
+
 # Monday=0 ... Sunday=6
 @dataclass(frozen=True)
 class ClassEvent:
@@ -48,6 +53,24 @@ SCHEDULE: list[ClassEvent] = [
     ClassEvent("CEG 4195", "Lecture",    "Henderson Residence 013", 3, time(16, 0),  timedelta(minutes=80)),
     ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
 ]
+
+def build_sleep_events() -> list[ClassEvent]:
+    if not SLEEP_ENABLED:
+        return []
+    events: list[ClassEvent] = []
+    start_min = SLEEP_START.hour * 60 + SLEEP_START.minute
+    duration_min = int(SLEEP_DURATION.total_seconds() // 60)
+    for day in range(7):
+        end_min = start_min + duration_min
+        if end_min <= 24 * 60:
+            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, SLEEP_DURATION))
+        else:
+            first_duration = timedelta(minutes=(24 * 60 - start_min))
+            second_duration = timedelta(minutes=(end_min - 24 * 60))
+            events.append(ClassEvent("Sleep", "Rest", "Home", day, SLEEP_START, first_duration))
+            next_day = (day + 1) % 7
+            events.append(ClassEvent("Sleep", "Rest", "Home", next_day, time(0, 0), second_duration))
+    return events
 
 PHRASES = {
     "beginning": [
@@ -166,7 +189,8 @@ def build_weekly_view(now: datetime) -> str:
     now_minutes = now.hour * 60 + now.minute
     now_slot = floor_to_step(now_minutes, slot_minutes)
 
-    labels = [f"{ev.course} {ev.kind}" for ev in SCHEDULE]
+    all_events = SCHEDULE + build_sleep_events()
+    labels = [f"{ev.course} {ev.kind}" for ev in all_events]
     col_width = max(12, *(display_width(label) for label in labels)) if labels else 12
     time_width = 6  # marker + HH:MM
 
@@ -191,7 +215,7 @@ def build_weekly_view(now: datetime) -> str:
         row = [f"{marker}{hh:02d}:{mm:02d}"]
         for day_idx in range(7):
             label = ""
-            for ev in SCHEDULE:
+            for ev in all_events:
                 if ev.weekday != day_idx:
                     continue
                 ev_start = ev.start.hour * 60 + ev.start.minute
