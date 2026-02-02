@@ -466,11 +466,7 @@ def build_due_view(now: datetime) -> str:
     for w, start in enumerate(weeks):
         out.append("Due This Week" if w == 0 else "Due Next Week")
         out.append(line)
-        out.append(
-            "|"
-            + "|".join([cell_hl(days[i], start + timedelta(days=i) == today) for i in range(7)])
-            + "|"
-        )
+        out.append("|" + "|".join([pad_to_width(days[i], col_width) for i in range(7)]) + "|")
         out.append(
             "|"
             + "|".join([cell_hl(day_label(start + timedelta(days=i)), start + timedelta(days=i) == today) for i in range(7)])
@@ -484,7 +480,7 @@ def build_due_view(now: datetime) -> str:
                 d = start + timedelta(days=i)
                 items = due_map.get(d, [])
                 text = items[r] if r < len(items) else ""
-                row_cells.append(cell_hl(text, d == today))
+                row_cells.append(pad_to_width(text[:col_width], col_width))
             out.append("|" + "|".join(row_cells) + "|")
         out.append(line)
     return "\n".join(out)
