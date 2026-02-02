@@ -440,6 +440,7 @@ def build_weekly_view(now: datetime) -> str:
 
 def build_due_view(now: datetime) -> str:
     week_start = now.date() - timedelta(days=now.weekday())
+    today = now.date()
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     weeks = [week_start, week_start + timedelta(days=7)]
 
@@ -454,12 +455,27 @@ def build_due_view(now: datetime) -> str:
 
     col_width = 18
     line = "+" + "+".join(["-" * col_width] * 7) + "+"
+
+    def cell_hl(text: str, highlight: bool) -> str:
+        content = pad_to_width(text[:col_width], col_width)
+        if not highlight:
+            return content
+        return f"{HILITE}{content}{HILITE_RESET}"
+
     out: list[str] = []
     for w, start in enumerate(weeks):
         out.append("Due This Week" if w == 0 else "Due Next Week")
         out.append(line)
-        out.append("|" + "|".join([pad_to_width(days[i], col_width) for i in range(7)]) + "|")
-        out.append("|" + "|".join([pad_to_width(day_label(start + timedelta(days=i)), col_width) for i in range(7)]) + "|")
+        out.append(
+            "|"
+            + "|".join([cell_hl(days[i], start + timedelta(days=i) == today) for i in range(7)])
+            + "|"
+        )
+        out.append(
+            "|"
+            + "|".join([cell_hl(day_label(start + timedelta(days=i)), start + timedelta(days=i) == today) for i in range(7)])
+            + "|"
+        )
         out.append(line)
         max_rows = 3
         for r in range(max_rows):
@@ -468,7 +484,7 @@ def build_due_view(now: datetime) -> str:
                 d = start + timedelta(days=i)
                 items = due_map.get(d, [])
                 text = items[r] if r < len(items) else ""
-                row_cells.append(pad_to_width(text[:col_width], col_width))
+                row_cells.append(cell_hl(text, d == today))
             out.append("|" + "|".join(row_cells) + "|")
         out.append(line)
     return "\n".join(out)
