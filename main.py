@@ -25,7 +25,7 @@ BG_GREEN = "\033[42m"
 # Sleep feature flag and config
 SLEEP_ENABLED = True
 SLEEP_START = time(23, 0)  # 10:00 PM
-SLEEP_DURATION = timedelta(hours=10)
+SLEEP_DURATION = timedelta(hours=9)
 SLEEP_EVENT_COLOR = BG_CYAN
 MORNING_ENABLED = True
 MORNING_DURATION = timedelta(minutes=60)
@@ -73,12 +73,19 @@ SCHEDULE: list[ClassEvent] = [
 
 PERSONAL_SCHEDULE: list[ClassEvent] = [
     # Example:
+    ClassEvent("MAT 2384", "Study", "N/A", 0, time(10, 0), timedelta(minutes=60)),
     ClassEvent("MAT 2384", "Study", "N/A", 1, time(19, 0), timedelta(minutes=90)),
 
     ClassEvent("Ski Course", "Sport", "Mont Cascade", 3, time(17, 30), timedelta(minutes=260)),
 
-    ClassEvent("MAT 2384", "Study", "N/A", 4, time(10, 30), timedelta(minutes=90)),
-    ClassEvent("Church Night", "Social", "CCCO", 4, time(18, 00), timedelta(minutes=170)),
+    ClassEvent("MAT 2384", "Study", "N/A", 3, time(13, 0), timedelta(minutes=90)),
+
+    ClassEvent("MAT 2384", "Study", "N/A", 4, time(11, 30), timedelta(minutes=90)),
+    ClassEvent("MAT 2384", "Study", "N/A", 4, time(14, 30), timedelta(minutes=90)),
+    ClassEvent("S. A.", "Social", "CCCO", 4, time(18, 00), timedelta(minutes=170)),
+
+    ClassEvent("MAT 2384", "Study", "N/A", 5, time(11, 30), timedelta(minutes=90)),
+    ClassEvent("MAT 2384", "Study", "N/A", 6, time(11, 30), timedelta(minutes=90)),
 ]
 
 CLASS_EVENT_COLOR = BG_BLUE
@@ -92,12 +99,14 @@ FOOD_SCHEDULE: list[ClassEvent] = [
      ClassEvent("Dinner", "Home Made[2]", "N/A", 1, time(17, 0), timedelta(minutes=110)),
      ClassEvent("Lunch", "Prepared Food", "Home", 2, time(10, 0), timedelta(minutes=60)),
      ClassEvent("Dinner", "Eat out", "N/A", 2, time(17, 30), timedelta(minutes=60)),
+     ClassEvent("Dinner", "IDK whatever", "N/A", 3, time(15, 0), timedelta(minutes=60)),
 ]
 
 DUE_ITEMS: list[DueItem] = [
     # Example:
      #CEG 4166
-     DueItem("CEG 4166", "Lab1", datetime(2026, 1, 31, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4166", "Lab1", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4166", "Midterm", datetime(2026, 2, 12, 23, 59, tzinfo=TZ)),
 
      #CEG 4195 complete
      DueItem("CEG 4195", "Ass3", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
@@ -111,6 +120,7 @@ DUE_ITEMS: list[DueItem] = [
      DueItem("CEG 4195", "Lab1", datetime(2026, 2, 23, 23, 59, tzinfo=TZ)),
      DueItem("CEG 4195", "Lab2", datetime(2026, 4, 9, 23, 59, tzinfo=TZ)),
      DueItem("CEG 4195", "Project", datetime(2026, 3, 30, 23, 59, tzinfo=TZ)),
+     DueItem("CEG 4195", "Midterm", datetime(2026, 2, 12, 23, 59, tzinfo=TZ)),
 
      #MAT 2384 complete
      DueItem("MAT 2384", "Midterm1", datetime(2026, 2, 11, 23, 59, tzinfo=TZ)),
@@ -527,10 +537,10 @@ def main() -> None:
                 end_dt = class_end(start_dt, current_ev)
                 box = make_box([
                     "Current Class",
-                    f"御課: {current_ev.course} {current_ev.kind}",
-                    f"御室: {current_ev.room}",
+                    f"課: {current_ev.course} {current_ev.kind}",
+                    f"室: {current_ev.room}",
                     f"終: {end_dt:%I:%M %p}",
-                    f"御残時: {fmt_delta(remaining)}",
+                    f"残: {fmt_delta(remaining)}",
                     f"狐: {last_phrase_value}",
                 ])
                 print(box)
