@@ -8,6 +8,11 @@ import time as time_mod
 import os
 import random
 import unicodedata
+import json
+import threading
+import webbrowser
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from urllib.parse import urlparse
 
 TZ = ZoneInfo("America/Toronto")  # Ottawa
 
@@ -50,7 +55,7 @@ class DueItem:
 
 SCHEDULE: list[ClassEvent] = [
     # Monday (0)
-    ClassEvent("CEG 4166", "Lecture",  "Learning Crossroads C442", 0, time(13, 0),  timedelta(minutes=80)),
+    ClassEvent("CSI 2372", "Lecture",  "Learning Crossroads C442", 0, time(13, 0),  timedelta(minutes=80)),
     ClassEvent("CEG 4195", "Lecture",  "University Centre AUD",    0, time(14, 30), timedelta(minutes=80)),
     ClassEvent("CEG 4166", "Tutorial", "Henderson Residence 013",  0, time(17, 30), timedelta(minutes=80)),
     ClassEvent("MAT 2384", "Lecture",  "Learning Crossroads C140", 0, time(19, 0),  timedelta(minutes=80)),
@@ -514,60 +519,73 @@ def current_sleep_window(now: datetime) -> tuple[datetime, datetime] | None:
         return None
     return start_dt, end_dt
 
+PAGE = r'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Daybook · University Scheduler</title><style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{--bg:#f5f6f8;--paper:#fff;--ink:#22252c;--muted:#8b909b;--line:#eceef1;--blue:#5178ed;--bluebg:#edf1ff;--green:#269b77;--orange:#db9141;--red:#d55d63;--shadow:0 12px 35px #2f3b550a}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif}.shell{max-width:1240px;margin:auto;padding:34px 38px 60px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:34px}.brand{font:800 17px Manrope;letter-spacing:-.5px}.brand span{color:var(--blue)}.date{color:var(--muted);font-size:13px}.nav{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:30px}.nav button{border:0;background:transparent;padding:13px 18px;color:var(--muted);font:600 14px 'DM Sans';cursor:pointer;border-bottom:2px solid transparent}.nav button.active{color:var(--blue);border-color:var(--blue)}.page{display:none}.page.active{display:block}.heading{display:flex;justify-content:space-between;align-items:end;margin-bottom:23px}.eyebrow{text-transform:uppercase;letter-spacing:1.3px;font:500 10px 'DM Mono';color:var(--blue);margin-bottom:8px}.heading h1{font:700 29px Manrope;letter-spacing:-1px;margin:0}.sub{color:var(--muted);font-size:13px;margin-top:7px}.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}.card{background:var(--paper);border:1px solid var(--line);border-radius:15px;padding:22px;box-shadow:var(--shadow)}.card-title{font:700 14px Manrope;margin:0 0 16px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{padding:16px;background:#fff;border:1px solid var(--line);border-radius:13px}.stat .label{color:var(--muted);font-size:11px}.stat strong{display:block;margin-top:9px;font:700 22px Manrope}.stat small{font-size:11px;color:var(--muted)}.event{display:grid;grid-template-columns:68px 4px 1fr auto;gap:13px;padding:13px 0;border-top:1px solid var(--line);align-items:center}.event:first-child{border-top:0}.time{font:500 12px 'DM Mono';color:#656b77}.stripe{height:40px;background:var(--blue);border-radius:4px}.event:nth-child(3n) .stripe{background:#54ad91}.event:nth-child(4n) .stripe{background:#e7a950}.event-name{font:600 13px Manrope}.event-detail{font-size:11px;color:var(--muted);margin-top:4px}.duration{font:11px 'DM Mono';color:var(--muted)}.pill{font-size:10px;border-radius:20px;padding:5px 9px;background:var(--bluebg);color:var(--blue);white-space:nowrap}.empty{font-size:13px;color:var(--muted);padding:18px 0}.hero{padding:24px;border-radius:15px;background:#252d3d;color:white;margin-bottom:18px;position:relative;overflow:hidden}.hero:after{content:'';position:absolute;right:-35px;top:-74px;width:220px;height:220px;border-radius:50%;background:#ffffff0c}.hero-label{font:500 10px 'DM Mono';color:#b8c5ff;text-transform:uppercase;letter-spacing:1.4px}.hero h2{font:700 24px Manrope;margin:10px 0 5px}.hero p{font-size:12px;color:#c0c5d0;margin:0}.count{font:500 25px 'DM Mono';letter-spacing:-1px;margin-top:24px}.hero .pill{display:inline-block;background:#ffffff1c;color:white;margin-top:14px}.hero .hero-place{position:absolute;right:22px;bottom:24px;color:#c0c5d0;font-size:12px}.timeline{position:relative}.timeline:before{content:'';position:absolute;left:24px;top:5px;bottom:5px;width:1px;background:var(--line)}.row{display:grid;grid-template-columns:50px 1fr;gap:16px;position:relative;margin:0 0 14px}.row-time{font:11px 'DM Mono';color:var(--muted);padding-top:16px}.row-body{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:#fff;position:relative}.row-body:before{content:'';position:absolute;left:-33px;top:19px;width:9px;height:9px;border:2px solid var(--blue);background:white;border-radius:50%}.row.current .row-body{border-color:#c9d5ff;background:#f8f9ff}.row.current .row-body:before{background:var(--blue)}.row-title{font:600 13px Manrope}.row-meta{display:flex;justify-content:space-between;margin-top:7px;color:var(--muted);font-size:11px}.important-list{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.important{background:white;border:1px solid var(--line);border-radius:14px;padding:19px;box-shadow:var(--shadow)}.important-top{display:flex;justify-content:space-between;align-items:start}.important h3{font:700 14px Manrope;margin:0}.important .type{font-size:10px;color:var(--blue);background:var(--bluebg);padding:5px 8px;border-radius:12px}.important .days{font:700 26px Manrope;margin-top:22px;letter-spacing:-1px}.important .days span{font:400 12px 'DM Sans';color:var(--muted);letter-spacing:0}.important .when{font:11px 'DM Mono';color:var(--muted);margin-top:7px}.important .course{font-size:11px;color:var(--muted);margin-top:10px}.week{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.day{border:1px solid var(--line);border-radius:11px;padding:11px 9px;min-height:100px}.day.today{border-color:#b7c6ff;background:#f7f8ff}.day-name{font:11px 'DM Mono';color:var(--muted)}.day-num{font:700 17px Manrope;margin:4px 0 10px}.mini{font-size:9px;line-height:1.4;background:var(--bluebg);color:#4265d1;border-radius:5px;padding:4px;margin:3px 0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.mini.personal{background:#fff3df;color:#a96b1c}.mini.food{background:#e7f6f0;color:#258363}.foot{font-size:11px;color:var(--muted);margin-top:15px}.empty-page{grid-column:1/-1}.now{font:500 13px 'DM Mono';color:var(--muted)}@media(max-width:760px){.shell{padding:22px 16px}.grid{grid-template-columns:1fr}.stats{gap:7px}.stat{padding:12px}.stat strong{font-size:18px}.important-list{grid-template-columns:1fr}.week{overflow:auto;grid-template-columns:repeat(7,minmax(90px,1fr))}.heading h1{font-size:24px}.top{margin-bottom:22px}.event{grid-template-columns:58px 4px 1fr auto;gap:9px}}</style></head><body><main class="shell"><header class="top"><div class="brand">daybook<span>.</span></div><div class="date" id="headerDate"></div></header><nav class="nav"><button class="active" data-page="tomorrow">Tomorrow overview</button><button data-page="today">Today dashboard</button><button data-page="important">Important dates</button></nav>
+<section class="page active" id="tomorrow"><div class="heading"><div><div class="eyebrow">Plan ahead</div><h1>Tomorrow, at a glance</h1><div class="sub" id="tomorrowDate"></div></div><div class="now" id="liveClock"></div></div><div class="stats" id="tomorrowStats"></div><div class="grid"><div class="card"><h2 class="card-title">Your schedule</h2><div id="tomorrowEvents"></div></div><aside><div class="card" style="margin-bottom:18px"><h2 class="card-title">Coming up</h2><div id="tomorrowTasks"></div></div><div class="card"><h2 class="card-title">Week preview</h2><div class="week" id="week"></div><div class="foot">Classes, personal plans and meals for the next 7 days.</div></div></aside></div></section>
+<section class="page" id="today"><div class="heading"><div><div class="eyebrow">Your day</div><h1>Today dashboard</h1><div class="sub" id="todayDate"></div></div><div class="now" id="todayClock"></div></div><div class="grid"><div class="card"><h2 class="card-title">Full day schedule</h2><div id="todayEvents"></div></div><aside><div id="nowCard"></div><div class="card"><h2 class="card-title">Next event</h2><div id="nextCard"></div></div></aside></div></section>
+<section class="page" id="important"><div class="heading"><div><div class="eyebrow">Keep it in view</div><h1>Important dates</h1><div class="sub">Your deadlines and milestones, with a live countdown.</div></div></div><div class="important-list" id="importantList"></div></section></main><script>
+const $=id=>document.getElementById(id);document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.page).classList.add('active')});
+function clock(t){return new Date(t).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}function dateLabel(t,opt={weekday:'long',month:'long',day:'numeric'}){return new Date(t).toLocaleDateString([],{...opt})}function human(ms){let n=Math.max(0,Math.floor(ms/1000)),d=Math.floor(n/86400),h=Math.floor(n%86400/3600),m=Math.floor(n%3600/60),s=n%60;if(d)return `${d}d ${h}h ${m}m`;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}function eventHtml(e){return `<div class="event"><div class="time">${clock(e.start)}</div><div class="stripe"></div><div><div class="event-name">${e.title}</div><div class="event-detail">${e.kind} · ${e.place||'Location not set'}</div></div><div class="duration">${e.duration}</div></div>`}function empty(s){return `<div class="empty">${s}</div>`}
+async function refresh(){let d=await(await fetch('/data')).json(),now=new Date(d.now),tom=new Date(d.tomorrow),todayEvents=d.today.events,tomEvents=d.tomorrow.events;$('headerDate').textContent=dateLabel(now,{weekday:'short',month:'short',day:'numeric',year:'numeric'});$('liveClock').textContent=$('todayClock').textContent=now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit',second:'2-digit'});$('tomorrowDate').textContent=dateLabel(tom,{weekday:'long',month:'long',day:'numeric'});$('todayDate').textContent=dateLabel(now);let classCount=tomEvents.filter(x=>x.source==='class').length,free=d.tomorrow.freeHours;$('tomorrowStats').innerHTML=`<div class="stat"><div class="label">COURSE EVENTS</div><strong>${classCount}</strong><small>on your timetable</small></div><div class="stat"><div class="label">PLANNED EVENTS</div><strong>${tomEvents.length}</strong><small>classes, plans and meals</small></div><div class="stat"><div class="label">OPEN TIME</div><strong>${free}h</strong><small>between scheduled events</small></div>`;$('tomorrowEvents').innerHTML=tomEvents.length?tomEvents.map(eventHtml).join(''):empty('Nothing scheduled. Enjoy the open day.');$('todayEvents').innerHTML=todayEvents.length?todayEvents.map(eventHtml).join(''):empty('Nothing scheduled for today.');$('tomorrowTasks').innerHTML=d.tomorrow.tasks.length?d.tomorrow.tasks.map(t=>`<div class="event"><div class="time">${t.time}</div><div class="stripe" style="background:#e7a950"></div><div><div class="event-name">${t.title}</div><div class="event-detail">${t.kind}</div></div><span class="pill">Due</span></div>`).join(''):empty('No tasks due tomorrow.');
+let cur=d.current;if(cur){$('nowCard').innerHTML=`<div class="hero"><div class="hero-label">Happening now · ${human(cur.remainingMs)} left</div><h2>${cur.title}</h2><p>${cur.kind} · ${clock(cur.start)}–${clock(cur.end)}</p><span class="pill">${cur.place||'Location not set'}</span></div>`}else{$('nowCard').innerHTML=`<div class="hero"><div class="hero-label">Right now</div><h2>You're between events</h2><p>${d.next?`Next up: ${d.next.title} at ${clock(d.next.start)}`:'No more events today'}</p><span class="pill">${d.next?human(new Date(d.next.start)-now)+' until start':'Enjoy the free time'}</span></div>`}let ne=d.next;$('nextCard').innerHTML=ne?`<div class="event"><div class="time">${clock(ne.start)}</div><div class="stripe"></div><div><div class="event-name">${ne.title}</div><div class="event-detail">${ne.kind} · ${ne.place}</div></div><div class="duration">${human(new Date(ne.start)-now)}</div></div>`:empty('No upcoming events today.');
+let dates=d.important;$('importantList').innerHTML=dates.length?dates.map(x=>`<article class="important"><div class="important-top"><h3>${x.title}</h3><span class="type">${x.kind}</span></div><div class="days">${x.days}<span> ${x.days===1?'day':'days'} to go</span></div><div class="when">${dateLabel(x.date,{weekday:'long',month:'long',day:'numeric',year:'numeric'})} · ${clock(x.date)}</div><div class="course">${x.course}</div></article>`).join(''):empty('No upcoming important dates. Add dates to DUE_ITEMS in main.py.');
+let week=$('week');week.innerHTML=d.week.map(day=>`<div class="day ${day.today?'today':''}"><div class="day-name">${day.name}</div><div class="day-num">${day.num}</div>${day.events.map(e=>`<div class="mini ${e.source==='personal'?'personal':e.source==='food'?'food':''}">${clock(e.start)} ${e.title}</div>`).join('')}</div>`).join('')}
+refresh();setInterval(refresh,1000);
+</script></body></html>'''
+
+def event_payload(ev: ClassEvent, day) -> dict:
+    start = datetime.combine(day, ev.start, tzinfo=TZ)
+    return {"title": ev.course, "kind": ev.kind, "place": ev.room, "start": start.isoformat(),
+            "end": (start + ev.duration).isoformat(), "duration": f"{int(ev.duration.total_seconds()//60)} min",
+            "source": "class" if ev in SCHEDULE else "food" if ev in FOOD_SCHEDULE else "personal"}
+
+def dashboard_data() -> dict:
+    now = datetime.now(TZ)
+    today = now.date()
+    tomorrow = today + timedelta(days=1)
+    all_events = SCHEDULE + PERSONAL_SCHEDULE + FOOD_SCHEDULE
+    def events_for(day):
+        return sorted([event_payload(ev, day) for ev in all_events if ev.weekday == day.weekday()], key=lambda e: e["start"])
+    td_events, tm_events = events_for(today), events_for(tomorrow)
+    def as_dt(item): return datetime.fromisoformat(item["start"])
+    ongoing = next((e for e in td_events if as_dt(e) <= now < datetime.fromisoformat(e["end"])), None)
+    future = [e for e in td_events if as_dt(e) > now]
+    next_event = future[0] if future else None
+    busy = sum(ev.duration.total_seconds() for ev in all_events if ev.weekday == tomorrow.weekday())
+    tasks = [{"title": f"{x.title} · {x.kind}", "kind": "Important date", "time": x.due_date.strftime("%I:%M %p")} for x in DUE_ITEMS if x.due_date.date() == tomorrow]
+    week = []
+    for offset in range(7):
+        day = today + timedelta(days=offset)
+        week.append({"name": day.strftime("%a").upper(), "num": day.day, "today": offset == 0,
+                     "events": [{**e, "start": e["start"]} for e in events_for(day)[:3]]})
+    dates = [{"title": x.title, "kind": x.kind, "course": x.title, "date": x.due_date.isoformat(),
+              "days": (x.due_date.date() - today).days} for x in sorted(DUE_ITEMS, key=lambda x: x.due_date) if x.due_date >= now]
+    current = {**ongoing, "remainingMs": (datetime.fromisoformat(ongoing["end"]) - now).total_seconds()*1000} if ongoing else None
+    return {"now": now.isoformat(), "today": {"events": td_events}, "tomorrow": {"events": tm_events, "freeHours": max(0, round((24*3600-busy)/3600, 1)), "tasks": tasks},
+            "tomorrowDate": tomorrow.isoformat(), "current": current, "next": next_event, "important": dates, "week": week}
+
+class DashboardHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if urlparse(self.path).path == "/data":
+            body = json.dumps(dashboard_data()).encode()
+            self.send_response(200); self.send_header("Content-Type", "application/json; charset=utf-8")
+        else:
+            body = PAGE.encode()
+            self.send_response(200); self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Cache-Control", "no-store"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+    def log_message(self, *_args): pass
+
 def main() -> None:
+    server = ThreadingHTTPServer(("127.0.0.1", 8765), DashboardHandler)
+    print("Daybook dashboard running at http://127.0.0.1:8765 — press Ctrl+C to stop.")
+    threading.Timer(0.8, lambda: webbrowser.open("http://127.0.0.1:8765")).start()
     try:
-        last_phrase_key: tuple[str, str] | None = None
-        last_phrase_value = ""
-        while True:
-            now = datetime.now(TZ)
-            current = compute_current(now)
-            occ, ev, delta = compute_next(now)
-
-            clear_screen()
-            print(f"Now:        {now:%a %Y-%m-%d %I:%M:%S %p %Z}")
-            print(f"Next class: {ev.course} {ev.kind} ({ev.room}) @ {occ:%a %I:%M %p}")
-            print(f"Time left:  {fmt_delta(delta)} (HH:MM:SS)")
-            print(f"Departure:  {fmt_delta(compute_departure_time(delta))} (HH:MM:SS)")
-            print(f"Departure with Lunch: {fmt_delta(compute_lunch_time(compute_departure_time(delta)))} (HH:MM:SS)")
-            if SLEEP_ENABLED:
-                sleep_window = current_sleep_window(now)
-                if sleep_window:
-                    sleep_start, sleep_end = sleep_window
-                    print(f"Sleep ends at: {sleep_end:%a %I:%M %p}")
-                    print(f"Sleep ends in: {fmt_delta(sleep_end - now)} (HH:MM:SS)")
-                else:
-                    print("Not sleeping right now.")
-            print("")
-
-            if current:
-                start_dt, current_ev, remaining = current
-                stage = phrase_stage(start_dt, current_ev, now)
-                phrase_key = (f"{current_ev.course}-{current_ev.kind}", stage)
-                if phrase_key != last_phrase_key:
-                    last_phrase_value = random.choice(PHRASES[stage])
-                    last_phrase_key = phrase_key
-                end_dt = class_end(start_dt, current_ev)
-                box = make_box([
-                    "Current Class",
-                    f"課: {current_ev.course} {current_ev.kind}",
-                    f"室: {current_ev.room}",
-                    f"終: {end_dt:%I:%M %p}",
-                    f"残: {fmt_delta(remaining)}",
-                    f"狐: {last_phrase_value}",
-                ])
-                print(box)
-            else:
-                print("No class in session.")
-            print("")
-            print("Weekly Schedule")
-            print(build_weekly_view(now))
-            print("")
-            print(build_due_view(now))
-            print("")
-            print(build_due_list(now))
-            time_mod.sleep(1)
+        server.serve_forever()
     except KeyboardInterrupt:
         print("\nStopped.")
+    finally:
+        server.server_close()
 
 if __name__ == "__main__":
     main()
