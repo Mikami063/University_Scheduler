@@ -21,3 +21,5 @@ For example:
 | 11:30 AM | Lecture — course and event type |
 
 Mark an event as continuing in slots after its start slot.
+
+Highlight the 90-minute slot matching the current clock time in the Today, Tomorrow, and Weekly timetable views. In the Weekly view, highlight that slot in today's column.
