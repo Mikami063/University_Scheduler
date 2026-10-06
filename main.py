@@ -55,42 +55,32 @@ class DueItem:
 
 SCHEDULE: list[ClassEvent] = [
     # Monday (0)
-    ClassEvent("CSI 2372", "Lecture",  "Learning Crossroads C442", 0, time(13, 0),  timedelta(minutes=80)),
-    ClassEvent("CEG 4195", "Lecture",  "University Centre AUD",    0, time(14, 30), timedelta(minutes=80)),
-    ClassEvent("CEG 4166", "Tutorial", "Henderson Residence 013",  0, time(17, 30), timedelta(minutes=80)),
-    ClassEvent("MAT 2384", "Lecture",  "Learning Crossroads C140", 0, time(19, 0),  timedelta(minutes=80)),
-    ClassEvent("MAT 2384", "Lecture",  "Learning Crossroads C140", 0, time(20, 30), timedelta(minutes=80)),  # screenshot shows 8:30–9:20, but keeping 80 per your rule
+    ClassEvent("CSI 2372", "Lecture",  "Tabaret Hall 333", 0, time(16, 0),  timedelta(minutes=80)),
+    ClassEvent("CEG 4136", "Laboratory",  "Colonel By Hall B302",    0, time(19, 00), timedelta(minutes=170)),
 
     # Tuesday (1)
-    ClassEvent("CEG 4166", "Laboratory", "SITE 2061",              1, time(11, 30), timedelta(minutes=170)),
-    #ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",1, time(17, 30), timedelta(minutes=80)),
+    ClassEvent("CSI 2372", "Laboratory", "SITE 2060",              1, time(8, 30), timedelta(minutes=80)),
+    ClassEvent("JPN 3901", "Lecture", "Simard Hall 427",              1, time(17, 30), timedelta(minutes=80)),
+    ClassEvent("CSI 2372", "Tutorial", "Simard Hall 425",              1, time(19, 00), timedelta(minutes=80)),
 
     # Wednesday (2)
-    ClassEvent("CEG 4166", "Lecture",    "Learning Crossroads C442",2, time(11, 30), timedelta(minutes=80)),
-    ClassEvent("CEG 4195", "Laboratory", "SITE 2060",              2, time(13, 0),  timedelta(minutes=170)),
-    ClassEvent("MAT 2384", "Lecture",    "Tabaret Hall 333",       2, time(16, 0),  timedelta(minutes=80)),
-    ClassEvent("ECO 1103", "Lecture",    "Tabaret Hall 333",       2, time(19, 0),  timedelta(minutes=170)),  # screenshot shows 7–10, but keeping 170 per your rule
+    ClassEvent("CEG 4912", "Lecture",    "***",2, time(10, 00), timedelta(minutes=80)),
+    ClassEvent("CEG 4136", "Lecture", "Social Science Building 1007",              2, time(13, 0),  timedelta(minutes=80)),
+    ClassEvent("CSI 2372", "Lecture",    "Tabaret Hall 333",       2, time(14, 30),  timedelta(minutes=80)),
 
     # Thursday (3)
-    ClassEvent("CEG 4195", "Lecture",    "Henderson Residence 013", 3, time(16, 0),  timedelta(minutes=80)),
-    #ClassEvent("ECO 1102", "Lecture",    "Learning Crossroads C240",3, time(17, 30), timedelta(minutes=80)),
+    ClassEvent("CEG 4912", "Laboratory", "SITE 2061",              3, time(10, 00), timedelta(minutes=170)),
+    ClassEvent("JPN 3901", "Lecture", "Simard Hall 427",              3, time(17, 30), timedelta(minutes=80)),
+
+    # Friday (4)
+    ClassEvent("CEG 4912", "Laboratory", "SITE 2061",              4, time(10, 00), timedelta(minutes=170)),
+    ClassEvent("CEG 4136", "Lecture", "Hagen Hall 302",              4, time(11, 30),  timedelta(minutes=80)),
+    ClassEvent("CEG 4136", "Tutorial", "Hagen Hall 302",              4, time(13, 00),  timedelta(minutes=80)),
+        
 ]
 
 PERSONAL_SCHEDULE: list[ClassEvent] = [
-    # Example:
-    ClassEvent("MAT 2384", "Study", "N/A", 0, time(10, 0), timedelta(minutes=60)),
-    ClassEvent("MAT 2384", "Study", "N/A", 1, time(19, 0), timedelta(minutes=90)),
-
-    ClassEvent("Ski Course", "Sport", "Mont Cascade", 3, time(17, 30), timedelta(minutes=260)),
-
-    ClassEvent("MAT 2384", "Study", "N/A", 3, time(13, 0), timedelta(minutes=90)),
-
-    ClassEvent("MAT 2384", "Study", "N/A", 4, time(11, 30), timedelta(minutes=90)),
-    ClassEvent("MAT 2384", "Study", "N/A", 4, time(14, 30), timedelta(minutes=90)),
-    ClassEvent("S. A.", "Social", "CCCO", 4, time(18, 00), timedelta(minutes=170)),
-
-    ClassEvent("MAT 2384", "Study", "N/A", 5, time(11, 30), timedelta(minutes=90)),
-    ClassEvent("MAT 2384", "Study", "N/A", 6, time(11, 30), timedelta(minutes=90)),
+    
 ]
 
 CLASS_EVENT_COLOR = BG_BLUE
@@ -98,41 +88,11 @@ PERSONAL_EVENT_COLOR = BG_MAGENTA
 FOOD_EVENT_COLOR = BG_GREEN
 
 FOOD_SCHEDULE: list[ClassEvent] = [
-    # Example:
-     ClassEvent("Dinner", "Eat out", "N/A", 0, time(16, 0), timedelta(minutes=60)),
-     ClassEvent("Lunch", "Prepared Food", "Home", 1, time(10, 0), timedelta(minutes=60)),
-     ClassEvent("Dinner", "Home Made[2]", "N/A", 1, time(17, 0), timedelta(minutes=110)),
-     ClassEvent("Lunch", "Prepared Food", "Home", 2, time(10, 0), timedelta(minutes=60)),
-     ClassEvent("Dinner", "Eat out", "N/A", 2, time(17, 30), timedelta(minutes=60)),
-     ClassEvent("Dinner", "IDK whatever", "N/A", 3, time(15, 0), timedelta(minutes=60)),
+
 ]
 
 DUE_ITEMS: list[DueItem] = [
-    # Example:
-     #CEG 4166
-     DueItem("CEG 4166", "Lab1", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4166", "Midterm", datetime(2026, 2, 12, 23, 59, tzinfo=TZ)),
-
-     #CEG 4195 complete
-     DueItem("CEG 4195", "Ass3", datetime(2026, 2, 2, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass4", datetime(2026, 2, 9, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass5", datetime(2026, 2, 23, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass6", datetime(2026, 3, 2, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass7", datetime(2026, 3, 9, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass8", datetime(2026, 3, 16, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass9", datetime(2026, 3, 23, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Ass10", datetime(2026, 3, 30, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Lab1", datetime(2026, 2, 23, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Lab2", datetime(2026, 4, 9, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Project", datetime(2026, 3, 30, 23, 59, tzinfo=TZ)),
-     DueItem("CEG 4195", "Midterm", datetime(2026, 2, 12, 23, 59, tzinfo=TZ)),
-
-     #MAT 2384 complete
-     DueItem("MAT 2384", "Midterm1", datetime(2026, 2, 11, 23, 59, tzinfo=TZ)),
-     DueItem("MAT 2384", "Midterm2", datetime(2026, 3, 18, 23, 59, tzinfo=TZ)),
-
-     #ECO 1103
-     DueItem("ECO 1103", "Ass1", datetime(2026, 2, 18, 23, 59, tzinfo=TZ)),
+    
 ]
 
 def build_sleep_events() -> list[ClassEvent]:
