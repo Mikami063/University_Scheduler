@@ -23,3 +23,7 @@ For example:
 Mark an event as continuing in slots after its start slot.
 
 Highlight the 90-minute slot matching the current clock time in the Today, Tomorrow, and Weekly timetable views. In the Weekly view, highlight that slot in today's column.
+
+### Sleep and wake-up schedule
+
+Include a daily sleep block starting at 10:00 PM and lasting nine hours, followed by a Wake up routine from 7:00 to 8:00 AM. Show both in the Today, Tomorrow, and Weekly timetables, including the portions that cross midnight.
